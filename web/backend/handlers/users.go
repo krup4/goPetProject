@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/krup4/goPetProject/web/backend/db"
+	"github.com/krup4/goPetProject/web/backend/db/queries"
+	"github.com/krup4/goPetProject/web/backend/others"
 	requests "github.com/krup4/goPetProject/web/backend/request"
 	"github.com/krup4/goPetProject/web/backend/response"
 )
@@ -17,26 +19,29 @@ func UserSignUP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user db.User
-	err := db.Pool.QueryRow(r.Context(), `
-		SELECT (id, login, password, name) FROM users WHERE login = $1
-	`, userRequest.Login).Scan(&user)
+	_, err := queries.GetUserByLogin(userRequest.Login)
 
 	if err != nil && err != pgx.ErrNoRows {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatalln(err.Error())
 		return
 	} else if err == nil {
 		http.Error(w, "User is already exists", http.StatusBadRequest)
 		return
 	}
 
-	_, err = db.Pool.Exec(r.Context(), `
-		INSERT INTO users (login, password, name) 
-		VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
-	`, userRequest.Login, userRequest.Password, userRequest.Name)
+	hashedPassword, err := others.GenerateFromPassword(userRequest.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatalln(err.Error())
+		return
+	}
+
+	_, err = queries.CreateNewUser(userRequest.Login, hashedPassword, userRequest.Name)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Fatalln(err.Error())
 		return
 	}
 
