@@ -16,7 +16,7 @@ func GetUserByLogin(login string) (db.User, error) {
 	return user, err
 }
 
-func CreateNewUser(login string, password []byte, name string) (pgconn.CommandTag, error) {
+func CreateNewUser(login string, password string, name string) (pgconn.CommandTag, error) {
 	commandTag, err := db.Pool.Exec(context.Background(), `
 		INSERT INTO users (login, password, name) 
 		VALUES ($1, $2, $3) ON CONFLICT DO NOTHING

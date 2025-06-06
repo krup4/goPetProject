@@ -18,6 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	err = db.InitDB(context.Background())
 	if err != nil {
@@ -37,6 +38,7 @@ func main() {
 
 	r.Route("/api/v1/user", func(r chi.Router) {
 		r.Post("/sign-up", handlers.UserSignUP)
+		r.Get("/sign-in", handlers.UserSignIn)
 	})
 
 	log.Println("Server started on :8080")
